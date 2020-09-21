@@ -85,17 +85,39 @@ def analyze_aquisition(basefile):
     ch1 = Channel(basefile)
     ch2 = Channel(basefile.replace('CH1', 'CH2'))
 
-    pars, _cov = curve_fit(
-        f=linear,
-        xdata=ch1.value_normalized,
-        ydata=ch2.value_normalized,
-        p0=[1, 0],
-        bounds=(-1e100, 1e100)
-    )
+    #offset = syncronize(ch1.value_normalized,ch2.value_normalized)
+    
+    best_cov = 1e100
+    for offset in range(-20,0):
+        if offset>0:
+            ch1.value_normalized2 = ch1.value_normalized.tolist()[:-offset]
+            ch2.value_normalized2 = ch2.value_normalized.tolist()[offset:]
+        elif offset<0:
+            ch1.value_normalized2 = ch1.value_normalized.tolist()[-offset:]
+            ch2.value_normalized2 = ch2.value_normalized.tolist()[:offset]
+
+        pars, _cov = curve_fit(
+            f=linear,
+            xdata=ch1.value_normalized2,
+            ydata=ch2.value_normalized2,
+            p0=[1, 0],
+            bounds=(-1e100, 1e100)
+        )
+        cov = _cov[0][0]**2 + _cov[0][1]**2 + _cov[1][0]**2 + _cov[1][1]**2
+        if cov < best_cov:
+            best_cov = cov
+            best_pars = pars
+            best_offset = offset
+            
+    print(best_offset)
+            
 
     lin_x = [-1.5, 1.5]
     lin_y = [linear(x, 1, 0) for x in lin_x]
-    fit_y = [linear(x, pars[0], pars[1]) for x in lin_x]
+    fit_y = [linear(x, best_pars[0], best_pars[1]) for x in lin_x]    
+    
+    ch1.value_normalized = ch1.value_normalized.tolist()[-best_offset:]
+    ch2.value_normalized = ch2.value_normalized.tolist()[:best_offset]
 
     pylab.figure()
 
@@ -105,8 +127,57 @@ def analyze_aquisition(basefile):
     pylab.plot(lin_x, fit_y, label='fitted {:.3f}*x{:+.3f}'.format(pars[0], pars[1]))
 
     pylab.legend()
+    
+    
+    pylab.figure()
+    pylab.title(f"{basefile} {str(max(ch1.value))} Vmax")
+    pylab.plot(ch2.value_normalized)
+    pylab.plot(ch1.value_normalized)
 
-for i in range(29, 38+1):
+def syncronize(xdata,ydata,testrange = 25):
+    """ Find the index offset between datas so that we maximize their convolution
+        (that is, they will be the most likely to each other)
+    """
+    def convolution(x,y):
+        length = len(x)
+        return sum(x[i] * y[i] for i in range(length))/length
+    
+        
+    xdata = xdata.tolist()
+    ydata = ydata.tolist()
+    
+    max_conv = convolution(xdata,ydata)
+    max_i = 0
+    print(f'i = {0}, conv = {max_conv}')
+    
+    for i in range(1,testrange):      
+        print(i)
+        # testing shorting ydata
+        x = xdata[:-i]
+        y = ydata[i:]
+        conv = convolution(x,y)
+        
+        print(f'i = {i}, conv = {conv}')
+        if conv > max_conv:
+            max_conv = conv
+            max_i = i
+            
+        # testing shorting xdata   
+        x = xdata[i:]         
+        y = ydata[:-i]
+        conv = convolution(x,y)
+        print(f'i = {-i}, conv = {conv}')
+        if conv > max_conv:
+            max_conv = conv
+            max_i = -i
+    
+    print(f'max_i = {max_i}, max_conv = max_conv')
+    return max_i       
+    
+        
+    
+
+for i in range(39,44+1):
     analyze_aquisition(f"DATA\\ALL00{i}\\F00{i}CH1.CSV")
 
 pylab.show()
