@@ -1,5 +1,5 @@
 """ Read a tektronix folder and transform a Y-time oscilogram
-to a X-Y plot, using Channels 1 and 2.
+    to a X-Y plot, using Channels 1 and 2.
 """
 
 import math
@@ -79,7 +79,7 @@ class Channel():
 
 def analyze_aquisition(basefile):
     """ Giving basefile with ch1 data, plot Ch1 x Ch2
-    as XY normalized plot, with linear fitting curve.
+        as XY normalized plot, with linear fitting curve.
     """
 
     ch1 = Channel(basefile)

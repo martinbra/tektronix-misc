@@ -1,2 +1,2 @@
 # tektronix-misc
-Miscelaneous scripts for tektronix scope data.
+Miscellaneous scripts for Tektronix TPS2024B scope data (probably for all TPS2000B family).
