@@ -85,6 +85,7 @@ def analyze_aquisition(basefile):
 
     ch1 = Channel(basefile)
     ch2 = Channel(basefile.replace('CH1', 'CH2'))
+    ch3 = Channel(basefile.replace('CH1', 'CH3'))
 
     #offset = syncronize(ch1.value_normalized,ch2.value_normalized)
     
@@ -110,30 +111,47 @@ def analyze_aquisition(basefile):
             best_pars = pars
             best_offset = offset
             
-    print(best_offset)
-            
-
-    lin_x = [-1.5, 1.5]
-    lin_y = [linear(x, 1, 0) for x in lin_x]
-    fit_y = [linear(x, best_pars[0], best_pars[1]) for x in lin_x]    
     
-    ch1.value_normalized = ch1.value_normalized.tolist()[-best_offset:]
-    ch2.value_normalized = ch2.value_normalized.tolist()[:best_offset]
+    ch1.value_normalized2 = (ch1.value_normalized/8.06).tolist()[-best_offset:]
+    ch2.value_normalized2 = (ch2.value_normalized*(1.8+3.3)/3.3+2.5).tolist()[:best_offset]
+    
+    pars, _cov = curve_fit(
+        f=linear,
+        xdata=ch1.value_normalized2,
+        ydata=ch2.value_normalized2,
+        p0=[1, 0],
+        bounds=(-1e100, 1e100)
+    )
+    lin_x = [-2.5/0.185, 2.5/0.185]
+    lin_y = [x*0.185+2.5 for x in lin_x]
+    #fit_y = [linear(x, pars[0], pars[1]) for x in lin_x]    
+    
 
     pylab.figure()
 
-    pylab.title(f"{basefile} {str(max(ch1.value))} Vmax")
-    pylab.plot(ch1.value_normalized, ch2.value_normalized)
-    pylab.plot(lin_x, lin_y, label='ideal')
-    pylab.plot(lin_x, fit_y, label='fitted {:.3f}*x{:+.3f}'.format(pars[0], pars[1]))
+    pylab.title("Saturação do sensor de corrente ACS712-05B (curva XY)")
+    pylab.plot(ch1.value_normalized2, ch2.value_normalized2, label='Ganho do sensor')
+    pylab.plot(lin_x, lin_y, label='ganho ideal')
+    #pylab.plot(lin_x, fit_y, label='fitted {:.3f}*x{:+.3f}'.format(pars[0], pars[1]))
+    pylab.xlabel("Corrente [A] Sobre a carga Resistiva de 8.06$\Omega$")
+    pylab.ylabel("Tensão [V] de saída do sensor")
+    
+    pylab.yticks([ 0.37, 2.5,  4.76])
+    pylab.xticks([-11.7, 0, 12.20])
+    pylab.grid()
 
     pylab.legend()
     
     
     pylab.figure()
-    pylab.title(f"{basefile} {str(max(ch1.value))} Vmax")
-    pylab.plot((ch2.value/3.3*(1.8+3.3)+2.5)*100, label = "ACS output * 100")
-    pylab.plot(ch1.value)
+    pylab.title("Saturação do sensor de corrente ACS712-05B (curva YT)")
+    pylab.plot(ch2.value_normalized/0.185*(3.3+1.8)/3.3, label = "Saída do sensor normalizada para a corrente de entrada")
+    pylab.plot(ch1.value_normalized/8.06, label="Corrente [A] Sobre a carga Resistiva de 8.06$\Omega$")
+    pylab.legend()
+    
+    pylab.yticks([-15,-11.7,0,12.2,15])
+    pylab.xticks([])
+    pylab.grid(axis='y')
 
 def syncronize(xdata,ydata,testrange = 25):
     """ Find the index offset between datas so that we maximize their convolution
@@ -178,7 +196,7 @@ def syncronize(xdata,ydata,testrange = 25):
         
     
 
-for i in range(39,40+1):
+for i in range(40,40+1):
     analyze_aquisition(f"DATA\\ALL00{i}\\F00{i}CH1.CSV")
 
 pylab.show()
