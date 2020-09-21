@@ -66,8 +66,9 @@ class Channel():
         self.parameters['firmware_version'] = self.get_param('Firmware Version')
 
         # getting the rms value as the normalization value
-        self.norm = math.sqrt(sum(x**2 for x in self.value)/self.parameters['record_lenght'])
-
+        #self.norm = math.sqrt(sum(x**2 for x in self.value)/self.parameters['record_lenght'])
+        self.norm = 1
+        
         # saves the normalized y values
         self.value_normalized = self.value / self.norm
 
@@ -131,8 +132,8 @@ def analyze_aquisition(basefile):
     
     pylab.figure()
     pylab.title(f"{basefile} {str(max(ch1.value))} Vmax")
-    pylab.plot(ch2.value_normalized)
-    pylab.plot(ch1.value_normalized)
+    pylab.plot((ch2.value/3.3*(1.8+3.3)+2.5)*100, label = "ACS output * 100")
+    pylab.plot(ch1.value)
 
 def syncronize(xdata,ydata,testrange = 25):
     """ Find the index offset between datas so that we maximize their convolution
@@ -177,7 +178,7 @@ def syncronize(xdata,ydata,testrange = 25):
         
     
 
-for i in range(39,44+1):
+for i in range(39,40+1):
     analyze_aquisition(f"DATA\\ALL00{i}\\F00{i}CH1.CSV")
 
 pylab.show()
