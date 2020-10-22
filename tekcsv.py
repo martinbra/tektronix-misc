@@ -156,6 +156,9 @@ def analyze_aquisition(basefile):
 def syncronize(xdata,ydata,testrange = 25):
     """ Find the index offset between datas so that we maximize their convolution
         (that is, they will be the most likely to each other)
+        
+        TODO: the convolution should consider only one cycle of the input, otherwise
+        the offset will reduce the error by excluding points.
     """
     def convolution(x,y):
         length = len(x)
@@ -197,6 +200,7 @@ def syncronize(xdata,ydata,testrange = 25):
     
 
 for i in range(40,40+1):
-    analyze_aquisition(f"DATA\\ALL00{i}\\F00{i}CH1.CSV")
+    file_number = str(i).zfill(4)
+    analyze_aquisition(f"DATA\\ALL{file_number}\\F{file_number}CH1.CSV")
 
 pylab.show()
